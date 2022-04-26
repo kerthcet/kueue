@@ -30,7 +30,7 @@ const (
 )
 
 func Test_PushOrUpdate(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	wl := utiltesting.MakeWorkload("workload-1", defaultNamespace).Obj()
 	if cq.Pending() != 0 {
 		t.Error("ClusterQueue should be empty")
@@ -50,7 +50,7 @@ func Test_PushOrUpdate(t *testing.T) {
 }
 
 func Test_Pop(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	now := time.Now()
 	wl1 := utiltesting.MakeWorkload("workload-1", defaultNamespace).Creation(now).Obj()
 	wl2 := utiltesting.MakeWorkload("workload-2", defaultNamespace).Creation(now.Add(time.Second)).Obj()
@@ -73,7 +73,7 @@ func Test_Pop(t *testing.T) {
 }
 
 func Test_Delete(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	wl1 := utiltesting.MakeWorkload("workload-1", defaultNamespace).Obj()
 	wl2 := utiltesting.MakeWorkload("workload-2", defaultNamespace).Obj()
 	cq.PushOrUpdate(wl1)
@@ -94,7 +94,7 @@ func Test_Delete(t *testing.T) {
 }
 
 func Test_Dump(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	wl1 := utiltesting.MakeWorkload("workload-1", defaultNamespace).Obj()
 	wl2 := utiltesting.MakeWorkload("workload-2", defaultNamespace).Obj()
 	if _, ok := cq.Dump(); ok {
@@ -108,7 +108,7 @@ func Test_Dump(t *testing.T) {
 }
 
 func Test_Info(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	wl := utiltesting.MakeWorkload("workload-1", defaultNamespace).Obj()
 	if info := cq.Info(keyFunc(workload.NewInfo(wl))); info != nil {
 		t.Error("workload doesn't exist")
@@ -120,7 +120,7 @@ func Test_Info(t *testing.T) {
 }
 
 func Test_AddFromQueue(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	wl := utiltesting.MakeWorkload("workload-1", defaultNamespace).Obj()
 	queue := &Queue{
 		items: map[string]*workload.Info{
@@ -138,7 +138,7 @@ func Test_AddFromQueue(t *testing.T) {
 }
 
 func Test_DeleteFromQueue(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	wl1 := utiltesting.MakeWorkload("workload-1", defaultNamespace).Obj()
 	wl2 := utiltesting.MakeWorkload("workload-2", defaultNamespace).Obj()
 	queue := &Queue{
@@ -158,7 +158,7 @@ func Test_DeleteFromQueue(t *testing.T) {
 }
 
 func Test_RequeueIfNotPresent(t *testing.T) {
-	cq := newClusterQueueImpl(keyFunc, byCreationTime)
+	cq := newClusterQueueImpl(keyFunc, byCreationTime, nil)
 	wl := utiltesting.MakeWorkload("workload-1", defaultNamespace).Obj()
 	if ok := cq.RequeueIfNotPresent(workload.NewInfo(wl), true); !ok {
 		t.Error("failed to requeue nonexistent workload")

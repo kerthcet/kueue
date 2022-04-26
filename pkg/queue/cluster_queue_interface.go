@@ -21,12 +21,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	kueue "sigs.k8s.io/kueue/apis/kueue/v1alpha1"
+	"sigs.k8s.io/kueue/pkg/metrics"
 	"sigs.k8s.io/kueue/pkg/workload"
 )
 
 // ClusterQueue is an interface for a cluster queue to store workloads waiting
 // to be scheduled.
 type ClusterQueue interface {
+	// Name returns the ClusterQUeue name.
+	Name() string
 	// Update updates the properties of this ClusterQueue.
 	Update(*kueue.ClusterQueue)
 	// Cohort returns the Cohort of this ClusterQueue.
@@ -75,16 +78,16 @@ type ClusterQueue interface {
 	Info(string) *workload.Info
 }
 
-var registry = map[kueue.QueueingStrategy]func(cq *kueue.ClusterQueue) (ClusterQueue, error){
+var registry = map[kueue.QueueingStrategy]func(*kueue.ClusterQueue, metrics.MetricRecorder) (ClusterQueue, error){
 	StrictFIFO:     newClusterQueueStrictFIFO,
 	BestEffortFIFO: newClusterQueueBestEffortFIFO,
 }
 
-func newClusterQueue(cq *kueue.ClusterQueue) (ClusterQueue, error) {
+func newClusterQueue(cq *kueue.ClusterQueue, metricRecorder metrics.MetricRecorder) (ClusterQueue, error) {
 	strategy := cq.Spec.QueueingStrategy
 	f, exist := registry[strategy]
 	if !exist {
 		return nil, fmt.Errorf("invalid QueueingStrategy %q", cq.Spec.QueueingStrategy)
 	}
-	return f(cq)
+	return f(cq, metricRecorder)
 }

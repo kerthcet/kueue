@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	kueue "sigs.k8s.io/kueue/apis/kueue/v1alpha1"
+	"sigs.k8s.io/kueue/pkg/metrics"
 	"sigs.k8s.io/kueue/pkg/util/heap"
 	"sigs.k8s.io/kueue/pkg/workload"
 )
@@ -31,21 +32,29 @@ type ClusterQueueImpl struct {
 	// across the queues in this ClusterQueue.
 	QueueingStrategy kueue.QueueingStrategy
 
-	heap   heap.Heap
-	cohort string
+	name           string
+	heap           heap.Heap
+	cohort         string
+	metricRecorder metrics.MetricRecorder
 }
 
-func newClusterQueueImpl(keyFunc func(obj interface{}) string, lessFunc func(a, b interface{}) bool) *ClusterQueueImpl {
+func newClusterQueueImpl(keyFunc func(obj interface{}) string, lessFunc func(a, b interface{}) bool, metricRecorder metrics.MetricRecorder) *ClusterQueueImpl {
 	return &ClusterQueueImpl{
-		heap: heap.New(keyFunc, lessFunc),
+		heap:           heap.New(keyFunc, lessFunc),
+		metricRecorder: metricRecorder,
 	}
 }
 
 var _ ClusterQueue = &ClusterQueueImpl{}
 
 func (c *ClusterQueueImpl) Update(apiCQ *kueue.ClusterQueue) {
+	c.name = apiCQ.Name
 	c.QueueingStrategy = apiCQ.Spec.QueueingStrategy
 	c.cohort = apiCQ.Spec.Cohort
+}
+
+func (c *ClusterQueueImpl) Name() string {
+	return c.name
 }
 
 func (c *ClusterQueueImpl) Cohort() string {
@@ -71,16 +80,26 @@ func (c *ClusterQueueImpl) DeleteFromQueue(q *Queue) {
 // pushIfNotPresent pushes the workload to ClusterQueue.
 // If the workload is already present, returns false. Otherwise returns true.
 func (c *ClusterQueueImpl) pushIfNotPresent(info *workload.Info) bool {
-	return c.heap.PushIfNotPresent(info)
+	added := c.heap.PushIfNotPresent(info)
+	if added && c.metricRecorder != nil {
+		c.metricRecorder.Inc()
+	}
+	return added
 }
 
 func (c *ClusterQueueImpl) PushOrUpdate(w *kueue.Workload) {
 	info := workload.NewInfo(w)
-	c.heap.PushOrUpdate(info)
+	added := c.heap.PushOrUpdate(info)
+	if added && c.metricRecorder != nil {
+		c.metricRecorder.Inc()
+	}
 }
 
 func (c *ClusterQueueImpl) Delete(w *kueue.Workload) {
 	c.heap.Delete(workload.Key(w))
+	if c.metricRecorder != nil {
+		c.metricRecorder.Dec()
+	}
 }
 
 func (c *ClusterQueueImpl) RequeueIfNotPresent(wInfo *workload.Info, _ bool) bool {
@@ -99,6 +118,9 @@ func (c *ClusterQueueImpl) Pop() *workload.Info {
 	info := c.heap.Pop()
 	if info == nil {
 		return nil
+	}
+	if c.metricRecorder != nil {
+		c.metricRecorder.Dec()
 	}
 	return info.(*workload.Info)
 }

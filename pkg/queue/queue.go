@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	kueue "sigs.k8s.io/kueue/apis/kueue/v1alpha1"
+	"sigs.k8s.io/kueue/pkg/metrics"
 	"sigs.k8s.io/kueue/pkg/workload"
 )
 
@@ -42,12 +43,14 @@ func queueKeyForWorkload(w *kueue.Workload) string {
 type Queue struct {
 	ClusterQueue string
 
-	items map[string]*workload.Info
+	items          map[string]*workload.Info
+	metricRecorder metrics.MetricRecorder
 }
 
-func newQueue(q *kueue.Queue) *Queue {
+func newQueue(q *kueue.Queue, metricRecorder metrics.MetricRecorder) *Queue {
 	qImpl := &Queue{
-		items: make(map[string]*workload.Info),
+		items:          make(map[string]*workload.Info),
+		metricRecorder: metricRecorder,
 	}
 	qImpl.update(q)
 	return qImpl
@@ -60,6 +63,9 @@ func (q *Queue) update(apiQueue *kueue.Queue) {
 func (q *Queue) AddOrUpdate(w *kueue.Workload) {
 	key := workload.Key(w)
 	q.items[key] = workload.NewInfo(w)
+	if q.metricRecorder != nil {
+		q.metricRecorder.Inc()
+	}
 }
 
 func (q *Queue) AddIfNotPresent(w *workload.Info) bool {
@@ -67,7 +73,17 @@ func (q *Queue) AddIfNotPresent(w *workload.Info) bool {
 	_, ok := q.items[key]
 	if !ok {
 		q.items[key] = w
+		if q.metricRecorder != nil {
+			q.metricRecorder.Inc()
+		}
 		return true
 	}
 	return false
+}
+
+func (q *Queue) Delete(key string) {
+	delete(q.items, key)
+	if q.metricRecorder != nil {
+		q.metricRecorder.Dec()
+	}
 }

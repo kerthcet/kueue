@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kueue "sigs.k8s.io/kueue/apis/kueue/v1alpha1"
+	"sigs.k8s.io/kueue/pkg/metrics"
 	"sigs.k8s.io/kueue/pkg/workload"
 )
 
@@ -73,7 +74,7 @@ func (m *Manager) AddClusterQueue(ctx context.Context, cq *kueue.ClusterQueue) e
 		return errClusterQueueAlreadyExists
 	}
 
-	cqImpl, err := newClusterQueue(cq)
+	cqImpl, err := newClusterQueue(cq, metrics.NewPendingWorkloadsInClusterQueueRecorder(cq.Name))
 	if err != nil {
 		return err
 	}
@@ -158,7 +159,7 @@ func (m *Manager) AddQueue(ctx context.Context, q *kueue.Queue) error {
 	if _, ok := m.queues[key]; ok {
 		return fmt.Errorf("queue %q already exists", q.Name)
 	}
-	qImpl := newQueue(q)
+	qImpl := newQueue(q, metrics.NewPendingWorkloadsInQueueRecorder(q.Name, q.Namespace))
 	m.queues[key] = qImpl
 	// Iterate through existing workloads, as workloads corresponding to this
 	// queue might have been added earlier.
@@ -324,7 +325,7 @@ func (m *Manager) deleteWorkloadFromQueueAndClusterQueue(w *kueue.Workload, qKey
 	if q == nil {
 		return
 	}
-	delete(q.items, workload.Key(w))
+	q.Delete(workload.Key(w))
 	cq := m.clusterQueues[q.ClusterQueue]
 	if cq != nil {
 		cq.Delete(w)
@@ -449,7 +450,7 @@ func (m *Manager) heads() []workload.Info {
 		wlCopy.ClusterQueue = cqName
 		workloads = append(workloads, wlCopy)
 		q := m.queues[queueKeyForWorkload(wl.Obj)]
-		delete(q.items, workload.Key(wl.Obj))
+		q.Delete(workload.Key(wl.Obj))
 	}
 	return workloads
 }

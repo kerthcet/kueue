@@ -113,13 +113,15 @@ type Heap struct {
 
 // PushOrUpdate inserts an item to the queue.
 // The item will be updated if it already exists.
-func (h *Heap) PushOrUpdate(obj interface{}) {
+func (h *Heap) PushOrUpdate(obj interface{}) (added bool) {
 	key := h.data.keyFunc(obj)
 	if _, exists := h.data.items[key]; exists {
 		h.data.items[key].obj = obj
 		heap.Fix(&h.data, h.data.items[key].index)
+		return false
 	} else {
 		heap.Push(&h.data, &itemKeyValue{key, obj})
+		return true
 	}
 }
 

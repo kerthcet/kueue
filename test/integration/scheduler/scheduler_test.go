@@ -566,6 +566,6 @@ var _ = ginkgo.Describe("Scheduler", func() {
 		}()
 
 		framework.ExpectWorkloadsToBeAdmitted(ctx, k8sClient, prodBEClusterQ.Name, wl1)
-		framework.ExpectWorkloadsToBeAdmitted(ctx, k8sClient, devBEClusterQ.Name, wl2)
+		framework.ExpectWorkloadsToBeAdmitted(ctx, k8sClient, prodBEClusterQ.Name, wl2)
 	})
 })

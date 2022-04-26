@@ -18,6 +18,7 @@ package queue
 
 import (
 	kueue "sigs.k8s.io/kueue/apis/kueue/v1alpha1"
+	"sigs.k8s.io/kueue/pkg/metrics"
 	utilpriority "sigs.k8s.io/kueue/pkg/util/priority"
 	"sigs.k8s.io/kueue/pkg/workload"
 )
@@ -32,8 +33,8 @@ var _ ClusterQueue = &ClusterQueueStrictFIFO{}
 
 const StrictFIFO = kueue.StrictFIFO
 
-func newClusterQueueStrictFIFO(cq *kueue.ClusterQueue) (ClusterQueue, error) {
-	cqImpl := newClusterQueueImpl(keyFunc, byCreationTime)
+func newClusterQueueStrictFIFO(cq *kueue.ClusterQueue, metricRecorder metrics.MetricRecorder) (ClusterQueue, error) {
+	cqImpl := newClusterQueueImpl(keyFunc, byCreationTime, metricRecorder)
 	cqImpl.Update(cq)
 	return cqImpl, nil
 }

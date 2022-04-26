@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	kueue "sigs.k8s.io/kueue/apis/kueue/v1alpha1"
+	"sigs.k8s.io/kueue/pkg/metrics"
 	"sigs.k8s.io/kueue/pkg/workload"
 )
 
@@ -36,8 +37,8 @@ var _ ClusterQueue = &ClusterQueueBestEffortFIFO{}
 
 const BestEffortFIFO = kueue.BestEffortFIFO
 
-func newClusterQueueBestEffortFIFO(cq *kueue.ClusterQueue) (ClusterQueue, error) {
-	cqImpl := newClusterQueueImpl(keyFunc, byCreationTime)
+func newClusterQueueBestEffortFIFO(cq *kueue.ClusterQueue, metricRecorder metrics.MetricRecorder) (ClusterQueue, error) {
+	cqImpl := newClusterQueueImpl(keyFunc, byCreationTime, metricRecorder)
 	cqBE := &ClusterQueueBestEffortFIFO{
 		ClusterQueueImpl:      cqImpl,
 		inadmissibleWorkloads: make(map[string]*workload.Info),

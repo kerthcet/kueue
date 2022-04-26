@@ -36,7 +36,7 @@ func TestFIFOClusterQueue(t *testing.T) {
 		Spec: kueue.ClusterQueueSpec{
 			QueueingStrategy: kueue.StrictFIFO,
 		},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("Failed creating ClusterQueue %v", err)
 	}
@@ -173,7 +173,7 @@ func TestStrictFIFO(t *testing.T) {
 				Spec: kueue.ClusterQueueSpec{
 					QueueingStrategy: kueue.StrictFIFO,
 				},
-			})
+			}, nil)
 			if err != nil {
 				t.Fatalf("Failed creating ClusterQueue %v", err)
 			}
