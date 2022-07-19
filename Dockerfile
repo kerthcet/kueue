@@ -3,6 +3,10 @@ ARG BASE_IMAGE
 # Build the manager binary
 FROM ${BUILDER_IMAGE} as builder
 
+ARG GOPROXY=https://mirrors.aliyun.com/goproxy
+ENV GOPROXY=$GOPROXY
+ENV GO111MODULE=on
+
 WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod

@@ -150,6 +150,10 @@ image-push:
 	  $(IMAGE_PUSH_CMD) $(IMAGE_EXTRA_TAG); \
 	fi
 
+.PHONY: image-load
+image-load:
+	kind load docker-image $(IMAGE_TAG)
+
 ##@ Deployment
 
 ifndef ignore-not-found
