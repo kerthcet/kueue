@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 GIT_TAG ?= $(shell git describe --tags --dirty --always)
 # Image URL to use all building/pushing image targets
@@ -31,6 +32,10 @@ ifdef IMAGE_EXTRA_TAG
 IMAGE_BUILD_EXTRA_OPTS += -t $(IMAGE_EXTRA_TAG)
 endif
 
+ifndef artifacts
+ARTIFACTS ?= $(PROJECT_DIR)/bin
+endif
+
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 BASE_IMAGE ?= gcr.io/distroless/static:nonroot
@@ -40,6 +45,10 @@ BUILDER_IMAGE ?= golang:1.18
 ENVTEST_K8S_VERSION = 1.24
 
 INTEGRATION_TARGET ?= ./test/integration/...
+
+E2E_TARGET ?= ./test/e2e/...
+
+E2E_KIND_VERSION ?= kindest/node:v1.23.12
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -134,6 +143,16 @@ test-integration: manifests generate fmt vet envtest ginkgo ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" \
 	$(GINKGO) -v $(INTEGRATION_TARGET)
 
+.PHONY: test-e2e
+test-e2e: manifests generate fmt vet envtest ginkgo kind-delete kind-create e2e-docker image-load
+	if [ -d artifacts ]; then rm -rf artifacts; fi
+	mkdir -p artifacts
+	cd config/components/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_TAG}
+	kubectl apply -k test/e2e/config
+	@$(call clean-manifests)
+
+	$(GINKGO) --junit-report=junit.xml --output-dir=$(ARTIFACTS) -v $(E2E_TARGET)
+	kind delete cluster
 .PHONY: ci-lint
 ci-lint: golangci-lint
 	$(GOLANGCI_LINT) run --timeout 7m0s
@@ -172,9 +191,27 @@ image-build:
 		$(PUSH) \
 		$(IMAGE_BUILD_EXTRA_OPTS) ./
 
+.PHONY: e2e-docker
+e2e-docker: PLATFORMS=linux/amd64
+e2e-docker: IMAGE_BUILD_EXTRA_OPTS=--load
+e2e-docker: image-build
+
 .PHONY: image-push
 image-push: PUSH=--push
 image-push: image-build
+
+.PHONY: image-load
+image-load:
+	kind load docker-image $(IMAGE_TAG)
+
+## Create Kind Cluster for E2E
+.PHONY: kind-create
+kind-create:
+	kind create cluster --image=$(E2E_KIND_VERSION)
+
+.PHONY: kind-delete
+kind-delete: 
+	kind delete cluster
 
 ##@ Deployment
 
@@ -242,3 +279,9 @@ GINKGO = $(shell pwd)/bin/ginkgo
 .PHONY: ginkgo
 ginkgo: ## Download ginkgo locally if necessary.
 	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on $(GO_CMD) install github.com/onsi/ginkgo/v2/ginkgo@v2.1.4
+
+KIND = $(shell pwd)/bin/kind
+.PHONY: kind
+kind:
+	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on $(GO_CMD) install sigs.k8s.io/kind@v0.16.0
+
