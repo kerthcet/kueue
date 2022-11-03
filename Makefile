@@ -149,6 +149,7 @@ test-e2e: manifests generate fmt vet envtest ginkgo kind-delete kind-create e2e-
 	mkdir -p artifacts
 	cd config/components/manager && $(KUSTOMIZE) edit set image controller=${IMAGE_TAG}
 	kubectl apply -k test/e2e/config
+
 	@$(call clean-manifests)
 
 	$(GINKGO) --junit-report=junit.xml --output-dir=$(ARTIFACTS) -v $(E2E_TARGET)
@@ -210,7 +211,7 @@ kind-create:
 	kind create cluster --image=$(E2E_KIND_VERSION)
 
 .PHONY: kind-delete
-kind-delete: 
+kind-delete:
 	kind delete cluster
 
 ##@ Deployment
@@ -284,4 +285,3 @@ KIND = $(shell pwd)/bin/kind
 .PHONY: kind
 kind:
 	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on $(GO_CMD) install sigs.k8s.io/kind@v0.16.0
-
