@@ -1,15 +1,23 @@
 title: Dynamically Reclaiming Resources
 kep-number: 78
 authors:
+  - "@kerthcet"
   - "@thisisprasad"
-owning-sig: sig-scheduling
+status: implementable
+creation-date: 2023-05-03
 reviewers:
   - "@alculquicondor"
-  - "@kerthcet"
 approvers:
-  - "@ahg-g"
   - "@alculquicondor"
-status: implementable
-see-also:
-replaces:
-superseeded-by:
+
+# The target maturity stage in the current dev cycle for this KEP.
+stage: stable
+
+# The most recent milestone for which work toward delivery of this KEP has been
+# done. This can be the current (upcoming) milestone, if it is being actively
+# worked on.
+latest-milestone: "v0.4.0"
+
+# The milestone at which this feature was, or is targeted to be, at each stage.
+milestone:
+  stable: "v0.4.0"

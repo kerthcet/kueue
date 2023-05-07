@@ -28,7 +28,6 @@ This proposal allows Kueue to reclaim the resources of a successfully completed 
 
 In the remaining of this document, *Pods of a Workload* means the same as *Pods of a Job* and vice-versa.
 
-
 ## Motivation
 
 Currently, the resources owned by a Job are reclaimed by Kueue only when the whole Job finishes. For Jobs with multiple Pods, the resources will be reclaimed only after the last Pod of the Job finishes. This is not efficient as the Pods of parallel Job may have laggards consuming the unused resources of the Jobs those are currently executing.
@@ -68,7 +67,7 @@ The Job will be able to reclaim the resources of Pods when it satisfies the case
 
 #### RestartPolicy of Pods as Never
 
-Whenever a Pod of a Job fails, the Job will recreate a Pod as replacement against the failed Pod. The Job will continue this process of creating new Pods until the Job reaches its `backoffLimit`(by default the backoffLimit is `6`). The newly created Pod against the failed Pod will reuse the resources of the failed Pod. Once the Job reaches its `backoffLimit` and does not have the required successful `.spec.completions` count, the Job is termed as a `Failed` Job. When the Job is marked as failed, no more Pods would be created by the Job. So, the remaining owned resources of the Job will be reclaimed by queue. 
+Whenever a Pod of a Job fails, the Job will recreate a Pod as replacement against the failed Pod. The Job will continue this process of creating new Pods until the Job reaches its `backoffLimit`(by default the backoffLimit is `6`). The newly created Pod against the failed Pod will reuse the resources of the failed Pod. Once the Job reaches its `backoffLimit` and does not have the required successful `.spec.completions` count, the Job is termed as a `Failed` Job. When the Job is marked as failed, no more Pods would be created by the Job. So, the remaining owned resources of the Job will be reclaimed by queue.
 
 #### RestartPolicy of Pods as OnFailure
 
@@ -95,7 +94,7 @@ type WorkloadStatus struct {
     ReclaimedPodSets []ReclaimedPodSetPods `json:"reclaimedPodSets"`
 }
 
-// ReclaimedPodSetPod defines the PodSet name and count of successfully completed Pods 
+// ReclaimedPodSetPod defines the PodSet name and count of successfully completed Pods
 // belonging to the PodSet whose resources can be reclaimed.
 type ReclaimedPodSet struct{
     Name string
